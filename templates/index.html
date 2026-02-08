@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Leicester Ghost Bus Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #map { height: 600px; width: 100%; }
+        .ghost-icon { filter: hue-rotate(140deg); } /* Turns blue/red */
+    </style>
+</head>
+<body>
+    <h2>Leicester Route 48 - Live Ghost Tracker</h2>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Initialize map on Leicester
+        const map = L.map('map').setView([52.636, -1.139], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        let markers = [];
+
+        function updateBuses() {
+            fetch('/api/buses')
+                .then(res => res.json())
+                .then(data => {
+                    // Clear old markers
+                    markers.forEach(m => map.removeLayer(m));
+                    markers = [];
+
+                    data.forEach(bus => {
+                        const color = bus.status === "LIVE" ? "green" : "red";
+                        const marker = L.circleMarker([bus.lat, bus.lon], {
+                            color: color,
+                            radius: 10
+                        }).addTo(map)
+                        .bindPopup(`Bus ${bus.id}<br>Status: ${bus.status}<br>Last seen: ${bus.delay}m ago`);
+                        
+                        markers.push(marker);
+                    });
+                });
+        }
+
+        // Refresh every 30 seconds
+        setInterval(updateBuses, 30000);
+        updateBuses();
+    </script>
+</body>
+</html>
